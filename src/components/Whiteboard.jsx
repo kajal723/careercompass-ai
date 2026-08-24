@@ -3,7 +3,7 @@ import { Eraser, Pencil, RotateCcw, Square } from 'lucide-react';
 
 export default function Whiteboard({ onBoardEvent, remoteEvent }) {
   const canvasRef = useRef(null);
-  const drawingRef = useRef(false);
+  const drawingRef = useRef(null);
   const [tool, setTool] = useState('pen');
   const [connectionStatus, setConnectionStatus] = useState('Offline');
 
@@ -25,7 +25,9 @@ export default function Whiteboard({ onBoardEvent, remoteEvent }) {
 
   const drawSegment = (segment) => {
     const context = canvasRef.current?.getContext('2d');
-    if (!context) return;
+    if (!context || !segment?.from || !segment?.to) return;
+    const coordinates = [segment.from.x, segment.from.y, segment.to.x, segment.to.y];
+    if (!coordinates.every(Number.isFinite)) return;
     context.strokeStyle = segment.tool === 'eraser' ? '#0b1220' : '#67e8f9';
     context.lineWidth = segment.tool === 'eraser' ? 18 : 3;
     context.beginPath();
@@ -54,26 +56,27 @@ export default function Whiteboard({ onBoardEvent, remoteEvent }) {
 
   const pointFromEvent = (event) => {
     const canvas = canvasRef.current;
+    if (!canvas) return null;
     const bounds = canvas.getBoundingClientRect();
-    return {
+    const point = {
       x: ((event.clientX - bounds.left) / bounds.width) * canvas.width,
       y: ((event.clientY - bounds.top) / bounds.height) * canvas.height
     };
+    return Number.isFinite(point.x) && Number.isFinite(point.y) ? point : null;
   };
 
   const startDrawing = (event) => {
-    const context = canvasRef.current.getContext('2d');
     const point = pointFromEvent(event);
-    drawingRef.current = true;
-    drawingRef.current.lastPoint = point;
+    const context = canvasRef.current?.getContext('2d');
+    if (!context || !point) return;
+    drawingRef.current = { lastPoint: point };
     context.beginPath();
     context.moveTo(point.x, point.y);
   };
 
   const draw = (event) => {
-    if (!drawingRef.current) return;
-    const context = canvasRef.current.getContext('2d');
     const point = pointFromEvent(event);
+    if (!drawingRef.current || !point) return;
     const segment = { action: 'draw', tool, from: drawingRef.current.lastPoint, to: point };
     drawSegment(segment);
     drawingRef.current.lastPoint = point;
@@ -101,7 +104,7 @@ export default function Whiteboard({ onBoardEvent, remoteEvent }) {
         </div>
       </div>
       <div className="p-3">
-        <canvas ref={canvasRef} width="800" height="360" onPointerDown={startDrawing} onPointerMove={draw} onPointerUp={() => { drawingRef.current = false; }} onPointerLeave={() => { drawingRef.current = false; }} className="w-full aspect-[2/1] rounded-xl border border-slate-800 cursor-crosshair touch-none" />
+        <canvas ref={canvasRef} width="800" height="360" onPointerDown={startDrawing} onPointerMove={draw} onPointerUp={() => { drawingRef.current = null; }} onPointerLeave={() => { drawingRef.current = null; }} className="w-full aspect-[2/1] rounded-xl border border-slate-800 cursor-crosshair touch-none" />
         <div className="flex items-center gap-1.5 mt-2 text-[10px] text-slate-500"><Square className="w-3 h-3 text-cyan-400" /> Live drawing sync · {connectionStatus}</div>
       </div>
     </section>

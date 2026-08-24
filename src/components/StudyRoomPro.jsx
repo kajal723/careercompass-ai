@@ -43,6 +43,10 @@ export default function StudyRoomPro() {
   const participantIdRef = useRef(null);
   const mediaStreamRef = useRef(null);
   const screenStreamRef = useRef(null);
+  const signalQueueRef = useRef(new Map());
+  const processedSignalsRef = useRef(new Set());
+  const pendingIceRef = useRef(new Map());
+  const makingOfferRef = useRef(new Set());
 
   useEffect(() => {
     if (!timerRunning || seconds === 0) return undefined;
@@ -99,6 +103,10 @@ export default function StudyRoomPro() {
     if (!room || !user) return undefined;
     const participantId = `${user.email}-${window.crypto?.randomUUID?.() || Date.now()}`;
     participantIdRef.current = participantId;
+    processedSignalsRef.current.clear();
+    signalQueueRef.current.clear();
+    pendingIceRef.current.clear();
+    makingOfferRef.current.clear();
     const participant = { id: participantId, participant_id: participantId, name: user.name, video_on: false, voice_on: false };
     const peerConnections = peersRef.current;
     let disposed = false;
@@ -106,6 +114,9 @@ export default function StudyRoomPro() {
     const removePeer = (peerId) => {
       peerConnections.get(peerId)?.close();
       peerConnections.delete(peerId);
+      signalQueueRef.current.delete(peerId);
+      pendingIceRef.current.delete(peerId);
+      makingOfferRef.current.delete(peerId);
       setRemoteParticipants((current) => current.filter((item) => item.participant_id !== peerId));
     };
     const send = (message) => {
@@ -117,12 +128,14 @@ export default function StudyRoomPro() {
       mediaStreamRef.current?.getTracks().forEach((track) => peer.addTrack(track, mediaStreamRef.current));
       peer.onicecandidate = ({ candidate }) => candidate && send({ type: 'signal', target_id: peerId, signal: { type: 'ice', candidate } });
       peer.onnegotiationneeded = async () => {
-        if (peer.signalingState !== 'stable') return;
+        if (peer.signalingState !== 'stable' || makingOfferRef.current.has(peerId)) return;
+        makingOfferRef.current.add(peerId);
         try {
           const offer = await peer.createOffer();
           await peer.setLocalDescription(offer);
           send({ type: 'signal', target_id: peerId, signal: { type: 'offer', description: offer } });
         } catch { removePeer(peerId); }
+        finally { makingOfferRef.current.delete(peerId); }
       };
       peer.ontrack = ({ streams }) => {
         const stream = streams[0];
@@ -130,8 +143,13 @@ export default function StudyRoomPro() {
       };
       peer.onconnectionstatechange = () => { if (['failed', 'closed', 'disconnected'].includes(peer.connectionState)) removePeer(peerId); };
       peerConnections.set(peerId, peer);
-      if (initiator) peer.createOffer().then((offer) => peer.setLocalDescription(offer).then(() => send({ type: 'signal', target_id: peerId, signal: { type: 'offer', description: offer } }))).catch(() => removePeer(peerId));
       return peer;
+    };
+    const queueSignal = (peerId, handler) => {
+      const current = signalQueueRef.current.get(peerId) || Promise.resolve();
+      const next = current.then(handler).catch(() => removePeer(peerId));
+      signalQueueRef.current.set(peerId, next);
+      return next;
     };
     const connect = () => {
       const socketUrl = `${apiBase.replace(/^http/, 'ws')}/ws/study/${encodeURIComponent(room)}/${encodeURIComponent(participantId)}?name=${encodeURIComponent(user.name)}`;
@@ -142,15 +160,32 @@ export default function StudyRoomPro() {
       socket.onmessage = async ({ data }) => {
         const message = JSON.parse(data);
         if (message.type === 'room_state') {
-          message.participants.forEach((item) => { setRemoteParticipants((current) => current.some((entry) => entry.participant_id === item.participant_id) ? current : [...current, item]); createPeer(item.participant_id, true); });
+          message.participants.forEach((item) => { setRemoteParticipants((current) => current.some((entry) => entry.participant_id === item.participant_id) ? current : [...current, item]); createPeer(item.participant_id, participantId > item.participant_id); });
         }
-        if (message.type === 'presence' && message.action === 'join') { setRemoteParticipants((current) => current.some((item) => item.participant_id === message.participant.participant_id) ? current : [...current, message.participant]); createPeer(message.participant.participant_id, true); }
+        if (message.type === 'presence' && message.action === 'join') { setRemoteParticipants((current) => current.some((item) => item.participant_id === message.participant.participant_id) ? current : [...current, message.participant]); createPeer(message.participant.participant_id, false); }
         if (message.type === 'presence' && message.action === 'leave') removePeer(message.participant_id);
         if (message.type === 'signal') {
-          const peer = createPeer(message.sender_id, false);
-          if (message.signal.type === 'offer') { await peer.setRemoteDescription(message.signal.description); const answer = await peer.createAnswer(); await peer.setLocalDescription(answer); send({ type: 'signal', target_id: message.sender_id, signal: { type: 'answer', description: answer } }); }
-          if (message.signal.type === 'answer') await peer.setRemoteDescription(message.signal.description);
-          if (message.signal.type === 'ice' && message.signal.candidate) await peer.addIceCandidate(message.signal.candidate);
+          const signalKey = `${message.sender_id}:${message.signal.type}:${JSON.stringify(message.signal.description || message.signal.candidate || {})}`;
+          if (processedSignalsRef.current.has(signalKey)) return;
+          processedSignalsRef.current.add(signalKey);
+          queueSignal(message.sender_id, async () => {
+            const peer = createPeer(message.sender_id, false);
+            if (message.signal.type === 'offer') {
+              if (peer.signalingState !== 'stable') return;
+              await peer.setRemoteDescription(message.signal.description);
+              const pendingIce = pendingIceRef.current.get(message.sender_id) || [];
+              for (const candidate of pendingIce) await peer.addIceCandidate(candidate);
+              pendingIceRef.current.delete(message.sender_id);
+              const answer = await peer.createAnswer();
+              await peer.setLocalDescription(answer);
+              send({ type: 'signal', target_id: message.sender_id, signal: { type: 'answer', description: answer } });
+            }
+            if (message.signal.type === 'answer' && peer.signalingState === 'have-local-offer') await peer.setRemoteDescription(message.signal.description);
+            if (message.signal.type === 'ice' && message.signal.candidate) {
+              if (peer.remoteDescription) await peer.addIceCandidate(message.signal.candidate);
+              else pendingIceRef.current.set(message.sender_id, [...(pendingIceRef.current.get(message.sender_id) || []), message.signal.candidate]);
+            }
+          });
         }
         if (message.type === 'chat') setMessages((current) => [...current, message.message]);
         if (message.type === 'whiteboard') { setRemoteBoardEvent(message.event); window.dispatchEvent(new CustomEvent('study-room-board-event', { detail: message.event })); }
