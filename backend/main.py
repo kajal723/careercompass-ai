@@ -27,7 +27,7 @@ class StudyRoomManager:
 
     async def connect(self, room_code, participant_id, participant, websocket):
         await websocket.accept()
-        existing = [item for item in self.rooms[room_code].values() if item["participant_id"] != participant_id]
+        existing = [item["participant"] for item in self.rooms[room_code].values() if item["participant"]["participant_id"] != participant_id]
         self.rooms[room_code][participant_id] = {"websocket": websocket, "participant": participant}
         await websocket.send_json({"type": "room_state", "participants": existing})
         await self.broadcast(room_code, {"type": "presence", "action": "join", "participant": participant}, exclude=participant_id)
@@ -60,11 +60,27 @@ class StudyRoomManager:
 
 study_rooms = StudyRoomManager()
 
+@app.post("/api/study/rooms")
+def create_study_room():
+    import secrets
+    room_code = secrets.token_hex(3).upper()
+    while room_code in study_rooms.rooms:
+        room_code = secrets.token_hex(3).upper()
+    study_rooms.rooms[room_code] = {}
+    return {"room_code": room_code}
+
+@app.get("/api/study/rooms/{room_code}")
+def validate_study_room(room_code: str):
+    normalized_code = room_code.strip().upper()
+    if normalized_code not in study_rooms.rooms:
+        raise HTTPException(status_code=404, detail="Room code is invalid or no longer active.")
+    return {"room_code": normalized_code, "available": True}
+
 @app.websocket("/ws/study/{room_code}/{participant_id}")
 async def study_room_socket(websocket: WebSocket, room_code: str, participant_id: str):
     room_code = room_code.strip().upper()
     participant_id = participant_id.strip()
-    if not room_code or not participant_id:
+    if not room_code or not participant_id or room_code not in study_rooms.rooms:
         await websocket.close(code=1008)
         return
     participant = {"participant_id": participant_id, "name": websocket.query_params.get("name", "Participant"), "video_on": False, "voice_on": False}
