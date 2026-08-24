@@ -63,7 +63,7 @@ export const simulationOptions = [
   }
 ];
 
-export function calculateSimulatedReadiness(baseReadiness = 68, activeSimulationIds = []) {
+export function calculateSimulatedReadiness(baseReadiness = 0, activeSimulationIds = []) {
   const activeOptions = simulationOptions.filter(opt => activeSimulationIds.includes(opt.id));
   const totalGain = activeOptions.reduce((acc, curr) => acc + curr.delta, 0);
   const simulatedScore = Math.min(96, baseReadiness + totalGain);

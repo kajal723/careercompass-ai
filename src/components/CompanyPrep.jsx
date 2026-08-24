@@ -38,20 +38,19 @@ export default function CompanyPrep({
   const [selectedCompanyId, setSelectedCompanyId] = useState('microsoft');
   
   // JD Analyzer state
-  const [jdInput, setJdInput] = useState(
-    "Looking for a Java Backend Developer with experience in Java, Spring Boot, REST APIs, MySQL, Docker and Git."
-  );
+  const [jdInput, setJdInput] = useState('');
   const [jdAnalysisResult, setJdAnalysisResult] = useState(() => 
-    analyzeJobDescriptionText(
-      "Looking for a Java Backend Developer with experience in Java, Spring Boot, REST APIs, MySQL, Docker and Git.",
-      currentSkills
-    )
+    analyzeJobDescriptionText('', currentSkills)
   );
   const [isAnalyzingJD, setIsAnalyzingJD] = useState(false);
 
   const selectedCompany = companiesData.find(c => c.id === selectedCompanyId) || companiesData[0];
   const selectedRole = selectedCompany.roles[0];
   const companyComparisons = computeCompanyComparison({ ...candidateProfile, technicalSkills: currentSkills });
+
+  if (!currentSkills?.length && !resumeData?.detectedSkills?.length) {
+    return <div className="glass-card rounded-2xl border-slate-800 p-8 text-center"><Building className="w-8 h-8 text-indigo-400 mx-auto" /><h1 className="text-xl font-bold text-white mt-4">Company preparation needs your profile</h1><p className="text-sm text-slate-400 mt-2">Add skills or analyze a resume before viewing personalized company alignment.</p><button onClick={() => setActiveTab('profile')} className="mt-5 px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs font-semibold">Complete profile</button></div>;
+  }
 
   const handleSelectCompany = (company) => {
     setSelectedCompanyId(company.id);
@@ -170,7 +169,7 @@ export default function CompanyPrep({
               {/* Readiness Score Card */}
               <div className="flex items-center space-x-4 bg-slate-950 p-4 rounded-xl border border-indigo-500/30">
                 <div className="text-center">
-                  <div className="text-3xl font-black text-indigo-400">72%</div>
+                  <div className="text-3xl font-black text-indigo-400">{companyComparisons.find((company) => company.company === selectedCompany.name)?.readiness || 0}%</div>
                   <span className="text-[10px] uppercase font-bold text-slate-400">Skill Alignment</span>
                 </div>
                 <div className="text-xs text-slate-300 border-l border-slate-800 pl-4 space-y-1">
@@ -188,14 +187,11 @@ export default function CompanyPrep({
               </h3>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {[
-                  { name: "DSA (Trees, Graphs, DP)", weight: "30% Weight", studentScore: 68, status: "Moderate Gap", color: "indigo" },
-                  { name: "Java / Core OOP", weight: "20% Weight", studentScore: 91, status: "Strong Match", color: "emerald" },
-                  { name: "DBMS / Relational Schema", weight: "10% Weight", studentScore: 77, status: "Strong Match", color: "emerald" },
-                  { name: "Operating Systems & Concurrency", weight: "10% Weight", studentScore: 61, status: "Moderate Gap", color: "amber" },
-                  { name: "System Design & Architecture", weight: "10% Weight", studentScore: 54, status: "Critical Gap", color: "rose" },
-                  { name: "Communication & Leadership", weight: "10% Weight", studentScore: 81, status: "Strong Match", color: "emerald" }
-                ].map(item => (
+                {selectedRole.requiredSkills.map((skill) => {
+                  const skillName = typeof skill === 'string' ? skill : skill.name;
+                  const studentScore = currentSkills.some((candidateSkill) => candidateSkill.name.toLowerCase().includes(skillName.toLowerCase().split('/')[0].trim())) ? 100 : 0;
+                  const item = { name: skillName, weight: `${typeof skill === 'object' ? skill.weight : ''}% Weight`, studentScore, status: studentScore ? 'Evidence found' : 'No evidence', color: studentScore ? 'emerald' : 'rose' };
+                  return (
                   <div key={item.name} className="p-3.5 rounded-xl bg-slate-900/80 border border-slate-800 space-y-2">
                     <div className="flex items-center justify-between text-xs">
                       <span className="font-bold text-white">{item.name}</span>
@@ -225,7 +221,8 @@ export default function CompanyPrep({
                       <span className="text-slate-500 text-[10px]">Benchmark: 80%</span>
                     </div>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
 

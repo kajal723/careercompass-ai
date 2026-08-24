@@ -127,19 +127,19 @@ export function generateFinalInterviewReport(interviewSession) {
   );
 
   const avgTechnical = Math.round(
-    history.reduce((acc, curr) => acc + (curr.evaluation?.technicalAccuracy || 75), 0) / totalQuestions
+    history.reduce((acc, curr) => acc + (curr.evaluation?.technicalAccuracy || 0), 0) / totalQuestions
   );
   
   const avgConceptual = Math.round(
-    history.reduce((acc, curr) => acc + (curr.evaluation?.conceptualDepth || 70), 0) / totalQuestions
+    history.reduce((acc, curr) => acc + (curr.evaluation?.conceptualDepth || 0), 0) / totalQuestions
   );
 
   const avgCommunication = Math.round(
-    history.reduce((acc, curr) => acc + (curr.evaluation?.communication || 80), 0) / totalQuestions
+    history.reduce((acc, curr) => acc + (curr.evaluation?.communication || 0), 0) / totalQuestions
   );
 
   const avgCompleteness = Math.round(
-    history.reduce((acc, curr) => acc + (curr.evaluation?.completeness || 72), 0) / totalQuestions
+    history.reduce((acc, curr) => acc + (curr.evaluation?.completeness || 0), 0) / totalQuestions
   );
 
   // Identify strengths & weak areas
@@ -151,25 +151,23 @@ export function generateFinalInterviewReport(interviewSession) {
 
   topicScores.sort((a, b) => b.score - a.score);
 
-  const technicalStrength = topicScores[0]?.topic || "Java Core & OOP";
+  const technicalStrength = topicScores[0]?.topic || "No completed interview topics";
   const weakAreas = topicScores
     .filter(t => t.score < 80)
     .map(t => t.topic)
     .slice(0, 3);
 
-  if (weakAreas.length === 0) {
-    weakAreas.push("System Design Scalability", "Advanced DSA Trees & DP");
-  }
+  
 
   return {
     interviewReadinessScore: avgOverallScore,
     radarMetrics: [
       { subject: "Technical", score: avgTechnical, fullMark: 100 },
-      { subject: "DSA", score: 68, fullMark: 100 },
+      { subject: "DSA", score: avgOverallScore, fullMark: 100 },
       { subject: "Communication", score: avgCommunication, fullMark: 100 },
-      { subject: "Problem Solving", score: 84, fullMark: 100 },
-      { subject: "Projects", score: 72, fullMark: 100 },
-      { subject: "HR & Values", score: 81, fullMark: 100 }
+      { subject: "Problem Solving", score: avgOverallScore, fullMark: 100 },
+      { subject: "Projects", score: avgOverallScore, fullMark: 100 },
+      { subject: "HR & Values", score: avgOverallScore, fullMark: 100 }
     ],
     technicalStrength,
     weakAreas,
@@ -189,27 +187,19 @@ export function generateFinalInterviewReport(interviewSession) {
 
 export function getDefaultReport() {
   return {
-    interviewReadinessScore: 76,
+    interviewReadinessScore: 0,
     radarMetrics: [
-      { subject: "Technical", score: 82, fullMark: 100 },
-      { subject: "DSA", score: 68, fullMark: 100 },
-      { subject: "Communication", score: 79, fullMark: 100 },
-      { subject: "Problem Solving", score: 84, fullMark: 100 },
-      { subject: "Projects", score: 72, fullMark: 100 },
-      { subject: "HR", score: 81, fullMark: 100 }
+      { subject: "Technical", score: 0, fullMark: 100 },
+      { subject: "DSA", score: 0, fullMark: 100 },
+      { subject: "Communication", score: 0, fullMark: 100 },
+      { subject: "Problem Solving", score: 0, fullMark: 100 },
+      { subject: "Projects", score: 0, fullMark: 100 },
+      { subject: "HR", score: 0, fullMark: 100 }
     ],
-    technicalStrength: "Java Core & OOP Fundamentals",
-    weakAreas: ["DSA (Dynamic Programming)", "System Design", "Project Explanation"],
-    topWeaknesses: [
-      { name: "DSA (Trees & DP)", gap: "Recursion depth and O(N log N) patience sorting algorithms", priority: "High" },
-      { name: "System Design", gap: "Distributed caching and database sharding trade-offs", priority: "High" },
-      { name: "Project Explanation", gap: "Highlighting architectural decisions and concurrency locks", priority: "Medium" }
-    ],
-    recommendedNextSteps: [
-      "Complete 20 medium DSA problems on LeetCode (Trees, Graphs, DP)",
-      "Practice one end-to-end System Design question (URL Shortener)",
-      "Reattempt AI Mock Interview to measure progress"
-    ],
+    technicalStrength: "No completed interview topics",
+    weakAreas: [],
+    topWeaknesses: [],
+    recommendedNextSteps: ["Start a mock interview to generate personalized feedback."],
     detailedAnswers: []
   };
 }

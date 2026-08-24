@@ -65,6 +65,10 @@ export default function CareerMatches({
   const [selectedRoleId, setSelectedRoleId] = useState(roleMatches[0]?.id);
   const selectedRole = roleMatches.find((role) => role.id === selectedRoleId) || roleMatches[0];
 
+  if (!resumeData?.detectedSkills?.length && !candidateProfile?.technicalSkills?.length) {
+    return <div className="glass-card rounded-2xl border-slate-800 p-8 text-center"><Target className="w-8 h-8 text-indigo-400 mx-auto" /><h1 className="text-xl font-bold text-white mt-4">Career matches need your profile</h1><p className="text-sm text-slate-400 mt-2">Add skills or analyze a resume before viewing personalized career alignment.</p><button onClick={() => setActiveTab('profile')} className="mt-5 px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs font-semibold">Complete profile</button></div>;
+  }
+
   const handleSelectTarget = (role) => {
     setSelectedRoleId(role.id);
     setCandidateProfile(prev => ({

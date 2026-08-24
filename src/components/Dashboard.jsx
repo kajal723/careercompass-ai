@@ -34,14 +34,12 @@ export default function Dashboard({
     subject: p.name.split(' ')[0],
     score: p.score,
     fullMark: 100
-  })) || [
-    { subject: 'Tech', score: 82 },
-    { subject: 'DSA', score: 71 },
-    { subject: 'Projects', score: 75 },
-    { subject: 'Comm', score: 81 },
-    { subject: 'Resume', score: 88 },
-    { subject: 'Interview', score: 70 }
-  ];
+  })) || [];
+
+  const hasProfileEvidence = Boolean(profile?.name || profile?.resumeTextSample || profile?.technicalSkills?.length || profile?.projects?.length);
+  if (!hasProfileEvidence) {
+    return <div className="space-y-6 pb-12"><div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-indigo-950/90 via-slate-900 to-slate-900 border border-indigo-500/20 p-6 md:p-8 shadow-xl"><div className="relative z-10 max-w-2xl"><div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-indigo-500/15 border border-indigo-500/30 text-indigo-300 text-xs font-semibold"><Sparkles className="w-3.5 h-3.5 text-indigo-400" /><span>AI Placement Intelligence Engine</span></div><h1 className="text-2xl sm:text-3xl font-extrabold text-white mt-4">Build your placement profile</h1><p className="text-sm text-slate-300 leading-relaxed mt-2">Add your own education, skills, projects, goals, or resume to unlock personalized career analysis.</p><div className="flex flex-wrap gap-3 mt-6"><button onClick={() => setActiveTab('profile')} className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold">Set up profile</button><button onClick={() => setActiveTab('resume')} className="px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 rounded-xl text-xs font-semibold">Analyze resume</button></div></div></div><div className="grid grid-cols-1 sm:grid-cols-3 gap-4"><div className="glass-card p-5 rounded-xl border-slate-800"><FileText className="w-5 h-5 text-cyan-400" /><h2 className="text-sm font-bold text-white mt-3">Resume evidence</h2><p className="text-xs text-slate-400 mt-1">Upload or paste your resume.</p></div><div className="glass-card p-5 rounded-xl border-slate-800"><Code className="w-5 h-5 text-emerald-400" /><h2 className="text-sm font-bold text-white mt-3">Your skills</h2><p className="text-xs text-slate-400 mt-1">Add skills you want analyzed.</p></div><div className="glass-card p-5 rounded-xl border-slate-800"><Target className="w-5 h-5 text-amber-400" /><h2 className="text-sm font-bold text-white mt-3">Your goals</h2><p className="text-xs text-slate-400 mt-1">Choose a target role and company.</p></div></div></div>;
+  }
 
   return (
     <div className="space-y-6 pb-12">
@@ -101,7 +99,7 @@ export default function Dashboard({
                 />
               </svg>
               <div className="absolute flex flex-col items-center justify-center text-center">
-                <span className="text-2xl font-extrabold text-white">{readinessData?.overallReadiness || 78}%</span>
+                <span className="text-2xl font-extrabold text-white">{readinessData?.overallReadiness || 0}%</span>
                 <span className="text-[9px] uppercase font-bold text-indigo-300 tracking-wider">Readiness</span>
               </div>
             </div>
@@ -110,7 +108,7 @@ export default function Dashboard({
               <div className="text-xs font-semibold text-slate-300">Overall Readiness</div>
               <div className="text-[11px] text-emerald-400 font-medium flex items-center gap-1">
                 <TrendingUp className="w-3 h-3" />
-                <span>+6% with next project</span>
+                <span>{readinessData?.overallReadiness ? 'Based on current evidence' : 'Add evidence to calculate'}</span>
               </div>
               <button
                 onClick={() => setActiveTab('readiness')}
@@ -138,8 +136,8 @@ export default function Dashboard({
             </span>
           </div>
           <div className="mt-2">
-            <h3 className="text-lg font-bold text-white">Spring Boot</h3>
-            <p className="text-xs text-rose-300/90 mt-0.5">Critical P0 • Required by Microsoft</p>
+            <h3 className="text-lg font-bold text-white">{readinessData?.needsImprovement?.[0]?.split(':')[0] || 'No gap calculated'}</h3>
+            <p className="text-xs text-rose-300/90 mt-0.5">{readinessData?.needsImprovement?.length ? 'Needs more evidence' : 'Complete your profile for analysis'}</p>
           </div>
           <div className="mt-3 flex items-center justify-between text-xs text-indigo-400 font-medium">
             <span>Learn Next</span>
@@ -159,8 +157,8 @@ export default function Dashboard({
             </span>
           </div>
           <div className="mt-2">
-            <h3 className="text-lg font-bold text-white">Build REST API</h3>
-            <p className="text-xs text-slate-400 mt-0.5">Roadmap Week 1-2 Module</p>
+            <h3 className="text-lg font-bold text-white">{readinessData?.recommendedActions?.[0]?.title || 'Add your next action'}</h3>
+            <p className="text-xs text-slate-400 mt-0.5">{readinessData?.recommendedActions?.[0]?.description || 'Your recommendations will appear here.'}</p>
           </div>
           <div className="mt-3 flex items-center justify-between text-xs text-amber-400 font-medium">
             <span>View 8-Wk Roadmap</span>
@@ -180,8 +178,8 @@ export default function Dashboard({
             </span>
           </div>
           <div className="mt-2">
-            <h3 className="text-lg font-bold text-white">72 / 100</h3>
-            <p className="text-xs text-slate-400 mt-0.5">Java Strong • DSA Medium Gap</p>
+            <h3 className="text-lg font-bold text-white">{readinessData?.pillars?.find((pillar) => pillar.name === 'Interview Readiness')?.score || 0} / 100</h3>
+            <p className="text-xs text-slate-400 mt-0.5">Based on completed interview evidence</p>
           </div>
           <div className="mt-3 flex items-center justify-between text-xs text-indigo-400 font-medium">
             <span>Start AI Mock</span>
@@ -201,8 +199,8 @@ export default function Dashboard({
             </span>
           </div>
           <div className="mt-2">
-            <h3 className="text-sm font-bold text-white truncate">E-Commerce REST API</h3>
-            <p className="text-xs text-emerald-300/90 mt-0.5">JWT • MySQL • Docker</p>
+            <h3 className="text-sm font-bold text-white truncate">{profile.projects?.[0]?.title || 'Add a project'}</h3>
+            <p className="text-xs text-emerald-300/90 mt-0.5">{profile.projects?.[0] ? 'From your profile' : 'Project evidence will appear here'}</p>
           </div>
           <div className="mt-3 flex items-center justify-between text-xs text-emerald-400 font-medium">
             <span>Explore Architecture</span>

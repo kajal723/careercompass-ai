@@ -16,22 +16,22 @@ public class ReadinessController {
             @RequestParam(defaultValue = "Software Engineer") String role) {
 
         Map<String, Object> response = new HashMap<>();
-        response.put("overallReadiness", 78);
+        response.put("overallReadiness", 0);
         response.put("targetCompany", company);
         response.put("targetRole", role);
-        response.put("alignmentLabel", "High Skill Alignment");
+        response.put("alignmentLabel", "Not yet calculated");
 
         List<Map<String, Object>> pillars = new ArrayList<>();
-        pillars.add(createPillar("Technical Skills", 82, "#6366f1", "Strong Core Java, OOP & SQL knowledge"));
-        pillars.add(createPillar("DSA / Problem Solving", 71, "#3b82f6", "180+ problems solved; needs Tree & Graph mastery"));
-        pillars.add(createPillar("Applied Projects", 75, "#10b981", "2 desktop/CLI projects; needs REST API & Docker"));
-        pillars.add(createPillar("Communication", 81, "#f59e0b", "Clear articulation, needs STAR method polish"));
-        pillars.add(createPillar("Resume & Evidence", 88, "#8b5cf6", "Structured format with verified internship & certs"));
-        pillars.add(createPillar("Interview Readiness", 70, "#ec4899", "Recent adaptive mock interview score feedback"));
+        pillars.add(createPillar("Technical Skills", 0, "#6366f1", "Add technical skills to calculate this pillar."));
+        pillars.add(createPillar("DSA / Problem Solving", 0, "#3b82f6", "Add problem-solving evidence to calculate this pillar."));
+        pillars.add(createPillar("Applied Projects", 0, "#10b981", "Add projects to calculate this pillar."));
+        pillars.add(createPillar("Communication", 0, "#f59e0b", "Add communication evidence to calculate this pillar."));
+        pillars.add(createPillar("Resume & Evidence", 0, "#8b5cf6", "Upload a resume to calculate this pillar."));
+        pillars.add(createPillar("Interview Readiness", 0, "#ec4899", "Complete an interview to calculate this pillar."));
 
         response.put("pillars", pillars);
-        response.put("topSkillGap", "Spring Boot");
-        response.put("nextBestAction", "Complete Spring Boot REST API module (Roadmap Week 1-2)");
+        response.put("topSkillGap", null);
+        response.put("nextBestAction", null);
 
         return ResponseEntity.ok(response);
     }

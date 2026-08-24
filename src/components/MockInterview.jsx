@@ -168,24 +168,6 @@ export default function MockInterview({
     }
   };
 
-  const handleLoadSampleAnswer = () => {
-    if (currentQuestion.id === 'q-tech-01') {
-      setUserAnswer(
-        "HashMap is not thread-safe and allows one null key. In multi-threaded environments, ConcurrentHashMap provides thread safety without locking the entire map. Prior to Java 8, it used Segment Locking. In Java 8 and beyond, it uses CAS (Compare-And-Swap) for bucket insertions and synchronized locks only on the individual bucket heads. It doesn't allow null keys and allows concurrent non-blocking reads."
-      );
-    } else if (currentQuestion.id === 'q-hr-02') {
-      setUserAnswer(
-        "Situation: In my Bank Management System project, concurrent transactions caused balance inconsistencies under load testing. Task: I needed to resolve the race condition while keeping latency low. Action: I used thread dump analysis to identify unsynchronized shared balances, then refactored to ReentrantLocks with tryLock timeouts and atomic variables. Result: Zero balance discrepancies across 10,000 threads and reduced lock contention latency by 40%."
-      );
-    } else if (currentQuestion.id === 'q-dsa-01') {
-      setUserAnswer(
-        "We can solve Lowest Common Ancestor using recursive post-order DFS. Base case: if root is null, or root is p, or root is q, return root. Recursively search left = lca(root.left, p, q) and right = lca(root.right, p, q). If both return non-null, root is the LCA. Time complexity is O(N) as each node is visited once, and space complexity is O(H) for recursion stack."
-      );
-    } else {
-      setUserAnswer(currentQuestion.idealAnswerOutline);
-    }
-  };
-
   const handleSubmitAnswer = () => {
     stopSpeaking();
     if (isListening && recognitionRef.current) {
@@ -463,15 +445,6 @@ export default function MockInterview({
               </div>
 
               <div className="flex items-center space-x-2">
-                {/* 1-Click Demo Answer for instant presentation */}
-                <button
-                  onClick={handleLoadSampleAnswer}
-                  className="text-[11px] text-indigo-400 hover:text-indigo-300 font-semibold px-2.5 py-1 rounded-lg bg-indigo-950/60 border border-indigo-500/30 transition-all flex items-center gap-1"
-                >
-                  <Sparkles className="w-3 h-3" />
-                  <span>⚡ Auto-Fill Strong Response</span>
-                </button>
-
                 {/* Mic Toggle */}
                 <button
                   onClick={handleToggleMic}

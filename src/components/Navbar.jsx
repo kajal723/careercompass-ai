@@ -13,7 +13,6 @@ import {
   Menu,
   X
 } from 'lucide-react';
-import { sampleAlternativeProfiles, defaultStudentProfile } from '../data/initialData';
 
 export default function Navbar({ 
   activeTab, 
@@ -117,45 +116,20 @@ export default function Navbar({
             <div className="relative group">
               <button className="flex items-center space-x-2 px-2.5 py-1.5 bg-slate-800/90 hover:bg-slate-800 border border-slate-700/80 rounded-lg text-xs font-medium text-slate-200">
                 <div className="w-5 h-5 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-500 flex items-center justify-center text-[10px] font-bold text-white">
-                  {currentProfile.name.charAt(0)}
+                  {(currentProfile.name || '?').charAt(0).toUpperCase()}
                 </div>
-                <span className="max-w-[80px] truncate hidden sm:inline">{(currentProfile.name || 'Candidate').split(' ')[0]}</span>
+                <span className="max-w-[80px] truncate hidden sm:inline">{(currentProfile.name || 'Profile').split(' ')[0]}</span>
                 <ChevronRight className="w-3 h-3 text-slate-400 rotate-90" />
               </button>
 
-              {/* Dropdown */}
-              <div className="absolute right-0 mt-1 w-56 bg-slate-900 border border-slate-800 rounded-xl shadow-xl py-1.5 hidden group-hover:block z-50">
-                <div className="px-3 py-1.5 border-b border-slate-800 text-[10px] uppercase font-semibold text-slate-400 tracking-wider">
-                  Select Persona (Preloaded)
-                </div>
-                <button
-                  onClick={() => setCurrentProfile(defaultStudentProfile)}
-                  className={`w-full text-left px-3 py-2 text-xs flex items-center justify-between hover:bg-slate-800/60 ${
-                    currentProfile.id === defaultStudentProfile.id ? 'text-indigo-400 font-semibold bg-indigo-950/30' : 'text-slate-300'
-                  }`}
-                >
-                  <div>
-                    <p className="font-medium">Kajal Shah (Default)</p>
-                    <p className="text-[10px] text-slate-400">Java • SQL • DSA • Microsoft SWE</p>
-                  </div>
-                  {currentProfile.id === defaultStudentProfile.id && <span className="text-xs">✓</span>}
-                </button>
-                {sampleAlternativeProfiles.map(p => (
-                  <button
-                    key={p.id}
-                    onClick={() => setCurrentProfile(p)}
-                    className={`w-full text-left px-3 py-2 text-xs flex items-center justify-between hover:bg-slate-800/60 ${
-                      currentProfile.id === p.id ? 'text-indigo-400 font-semibold bg-indigo-950/30' : 'text-slate-300'
-                    }`}
-                  >
-                    <div>
-                      <p className="font-medium">{p.name}</p>
-                      <p className="text-[10px] text-slate-400">{p.preferredCareer} • {p.targetCompany}</p>
-                    </div>
-                    {currentProfile.id === p.id && <span className="text-xs">✓</span>}
-                  </button>
-                ))}
-              </div>
+              {/* User profile shortcut */}
+              <button
+                onClick={() => setActiveTab('profile')}
+                className="absolute right-0 mt-1 w-56 bg-slate-900 border border-slate-800 rounded-xl shadow-xl py-2 hidden group-hover:block z-50 text-left"
+              >
+                <span className="block px-3 text-[10px] uppercase font-semibold text-slate-400 tracking-wider">Your profile</span>
+                <span className="block px-3 pt-1 text-xs text-slate-300">Update your information</span>
+              </button>
             </div>
 
             {/* Export Report Dossier Button */}

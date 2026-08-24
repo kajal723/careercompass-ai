@@ -30,14 +30,16 @@ function matchesSkill(requiredSkill, profileSkill) {
     .some(skillOption => normalizedProfileSkill.includes(skillOption.trim().toLowerCase()));
 }
 
-export function computeCareerReadinessScore(studentProfile, mockInterviewScore = 76) {
-  // Six core pillars of placement readiness
-  const technicalSkillsScore = 82;
-  const dsaScore = 71;
-  const projectsScore = 75;
-  const communicationScore = 81;
-  const resumeScore = 88;
-  const interviewReadinessScore = mockInterviewScore ? Math.round(mockInterviewScore * 0.92) : 70;
+export function computeCareerReadinessScore(studentProfile = {}, mockInterviewScore = null) {
+  const technicalSkills = studentProfile.technicalSkills || [];
+  const projects = studentProfile.projects || [];
+  const hasResume = Boolean(studentProfile.resumeTextSample?.trim());
+  const technicalSkillsScore = Math.min(100, technicalSkills.length * 10);
+  const dsaScore = Math.min(100, technicalSkills.filter((skill) => /dsa|algorithm|data structure/i.test(skill.name || '')).length * 25);
+  const projectsScore = Math.min(100, projects.length * 25);
+  const communicationScore = Math.min(100, (studentProfile.softSkills || []).length * 20);
+  const resumeScore = hasResume ? 100 : 0;
+  const interviewReadinessScore = typeof mockInterviewScore === 'number' ? Math.round(mockInterviewScore * 0.92) : 0;
 
   // Weighted aggregate formula
   const overallReadiness = Math.round(
@@ -50,35 +52,22 @@ export function computeCareerReadinessScore(studentProfile, mockInterviewScore =
   );
 
   const pillars = [
-    { name: "Technical Skills", score: technicalSkillsScore, fullMark: 100, color: "#6366f1", icon: "Code", summary: "Strong Core Java, OOP & SQL knowledge" },
-    { name: "DSA / Problem Solving", score: dsaScore, fullMark: 100, color: "#3b82f6", icon: "Binary", summary: "180+ problems solved; needs Tree & Graph mastery" },
-    { name: "Applied Projects", score: projectsScore, fullMark: 100, color: "#10b981", icon: "FolderGit2", summary: "2 desktop/CLI projects; needs REST API & Docker" },
-    { name: "Communication", score: communicationScore, fullMark: 100, color: "#f59e0b", icon: "MessageSquare", summary: "Clear articulation, needs STAR method polish" },
-    { name: "Resume & Evidence", score: resumeScore, fullMark: 100, color: "#8b5cf6", icon: "FileText", summary: "Structured format with verified internship & certs" },
-    { name: "Interview Readiness", score: interviewReadinessScore, fullMark: 100, color: "#ec4899", icon: "Users", summary: "Recent adaptive mock interview score feedback" }
+    { name: "Technical Skills", score: technicalSkillsScore, fullMark: 100, color: "#6366f1", icon: "Code", summary: technicalSkills.length ? `${technicalSkills.length} skills added to your profile.` : "Add technical skills to calculate this pillar." },
+    { name: "DSA / Problem Solving", score: dsaScore, fullMark: 100, color: "#3b82f6", icon: "Binary", summary: "Calculated from DSA and algorithm skills you add." },
+    { name: "Applied Projects", score: projectsScore, fullMark: 100, color: "#10b981", icon: "FolderGit2", summary: projects.length ? `${projects.length} project${projects.length === 1 ? '' : 's'} added to your profile.` : "Add projects to calculate this pillar." },
+    { name: "Communication", score: communicationScore, fullMark: 100, color: "#f59e0b", icon: "MessageSquare", summary: "Calculated from soft skills you add." },
+    { name: "Resume & Evidence", score: resumeScore, fullMark: 100, color: "#8b5cf6", icon: "FileText", summary: hasResume ? "Resume content is available for analysis." : "Upload or paste a resume to calculate this pillar." },
+    { name: "Interview Readiness", score: interviewReadinessScore, fullMark: 100, color: "#ec4899", icon: "Users", summary: typeof mockInterviewScore === 'number' ? "Based on your completed mock interview." : "Complete a mock interview to calculate this pillar." }
   ];
 
-  const strongAreas = [
-    "Core Java & Object-Oriented Programming (Advanced level)",
-    "Relational Database Schema Design & SQL Optimization (25% latency reduction proven)",
-    "Clean resume structure with verifiable Oracle certifications and GitHub repository links"
-  ];
-
-  const needsImprovement = [
-    "Framework Experience: Missing Spring Boot & REST APIs for enterprise cloud backend roles",
-    "Containerization: Docker and CI/CD deployment pipelines missing from project portfolio",
-    "Advanced DSA: Dynamic Programming and System Design scalability patterns need practice"
-  ];
-
-  const recommendedActions = [
-    { title: "Bridge Critical P0 Gap", description: "Complete Spring Boot + REST API module (Roadmap Week 1-2)", priority: "P0 High" },
-    { title: "Build Gap-Closing Project", description: "Develop 'Production-Ready E-Commerce REST API' with Docker & JWT", priority: "P0 High" },
-    { title: "Practice Targeted DSA", description: "Solve 20 medium Graph & Tree questions on LeetCode", priority: "P1 Medium" },
-    { title: "Take Adaptive Mock Interview", description: "Reattempt Microsoft Technical Mock Interview to target 85+ score", priority: "P1 Medium" }
-  ];
+  const strongAreas = pillars.filter((pillar) => pillar.score >= 70).map((pillar) => `${pillar.name}: ${pillar.score}% based on your available evidence.`);
+  const needsImprovement = pillars.filter((pillar) => pillar.score < 70).map((pillar) => `${pillar.name}: add relevant evidence or complete the related activity.`);
+  const recommendedActions = !studentProfile.name && !hasResume
+    ? [{ title: "Complete your profile", description: "Add your education, skills, projects, and target role to begin analysis.", priority: "Start here" }]
+    : needsImprovement.slice(0, 4).map((item) => ({ title: "Strengthen your evidence", description: item, priority: "Next" }));
 
   return {
-    overallReadiness: overallReadiness > 0 ? overallReadiness : 78,
+    overallReadiness,
     pillars,
     strongAreas,
     needsImprovement,
@@ -87,50 +76,53 @@ export function computeCareerReadinessScore(studentProfile, mockInterviewScore =
 }
 
 export function computeCompanyComparison(studentProfile) {
+  const profileSkills = [
+    ...(studentProfile?.technicalSkills || []).map((skill) => skill.name),
+    ...(studentProfile?.softSkills || [])
+  ];
   return [
     {
       company: "Microsoft",
       role: "Software Engineer",
-      readiness: 72,
-      matchGrade: "Strong Alignment",
-      tagline: "High fit for Core CS & Java; gaps in System Design & Spring Boot",
+      readiness: scoreCompany(profileSkills, ["DSA", "Java", "OOP", "DBMS", "Operating Systems", "Computer Networks", "System Design", "Problem Solving"]),
+      matchGrade: "Profile alignment",
+      tagline: "Alignment based on the skills currently in your profile.",
       color: "#00A4EF",
-      keyGaps: ["System Design", "Spring Boot", "Docker"],
-      strongSkills: ["Java", "OOP", "DBMS", "DSA (Intermediate)"],
-      focusArea: "Code readability & Concurrency depth"
+      keyGaps: [], strongSkills: profileSkills, focusArea: "Add profile evidence to refine this comparison."
     },
     {
       company: "Amazon",
       role: "Software Development Engineer (SDE I)",
-      readiness: 68,
-      matchGrade: "Moderate Alignment",
-      tagline: "Solid Java/SQL; requires LeetCode Graph/Tree speed & Leadership Principles",
+      readiness: scoreCompany(profileSkills, ["DSA", "Java", "System Design", "DBMS", "Operating Systems", "Communication"]),
+      matchGrade: "Profile alignment",
+      tagline: "Alignment based on the skills currently in your profile.",
       color: "#FF9900",
-      keyGaps: ["Advanced DSA (O(N) optimal)", "Microservices", "16 Leadership Principles"],
-      strongSkills: ["Java", "Multithreading", "MySQL"],
-      focusArea: "Algorithmic optimization & LP STAR stories"
+      keyGaps: [], strongSkills: profileSkills, focusArea: "Add profile evidence to refine this comparison."
     },
     {
       company: "Google",
       role: "Software Engineer (L3)",
-      readiness: 61,
-      matchGrade: "Developing Alignment",
-      tagline: "Requires high-tier Dynamic Programming, Graph geometry, and mathematical proofs",
+      readiness: scoreCompany(profileSkills, ["DSA", "Java", "Operating Systems", "Computer Networks", "Problem Solving"]),
+      matchGrade: "Profile alignment",
+      tagline: "Alignment based on the skills currently in your profile.",
       color: "#EA4335",
-      keyGaps: ["Hard Dynamic Programming", "Advanced Graph Algorithms", "Distributed Systems"],
-      strongSkills: ["Core Java", "Problem Solving"],
-      focusArea: "Complex algorithmic puzzles & trade-offs"
+      keyGaps: [], strongSkills: profileSkills, focusArea: "Add profile evidence to refine this comparison."
     },
     {
       company: "TCS Digital",
       role: "Digital Software Engineer",
-      readiness: 84,
-      matchGrade: "Exceptional Alignment",
-      tagline: "Student profile exceeds standard requirements for NQT & Technical rounds",
+      readiness: scoreCompany(profileSkills, ["Java", "SQL", "DSA", "OOP", "Communication"]),
+      matchGrade: "Profile alignment",
+      tagline: "Alignment based on the skills currently in your profile.",
       color: "#0078D7",
-      keyGaps: ["Web Frontend (Basic React/JS)"],
-      strongSkills: ["Core Java", "SQL Queries", "OOP", "DSA (Fundamentals)", "Communication"],
-      focusArea: "Final round interview confidence"
+      keyGaps: [], strongSkills: profileSkills, focusArea: "Add profile evidence to refine this comparison."
     }
   ];
+}
+
+function scoreCompany(profileSkills, requirements) {
+  if (!profileSkills.length) return 0;
+  const normalized = profileSkills.map((skill) => skill.toLowerCase());
+  const matched = requirements.filter((requirement) => normalized.some((skill) => skill.includes(requirement.toLowerCase())));
+  return Math.round((matched.length / requirements.length) * 100);
 }

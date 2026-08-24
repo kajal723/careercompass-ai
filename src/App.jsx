@@ -61,7 +61,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
   
   // 14-Step Demo Mode Presentation Stepper
-  const [isDemoMode, setIsDemoMode] = useState(true);
+  const [isDemoMode, setIsDemoMode] = useState(false);
   const [demoStep, setDemoStep] = useState(1);
   const [showExportModal, setShowExportModal] = useState(false);
 
@@ -98,11 +98,11 @@ export default function App() {
   };
 
   // Mock Interview State & Score
-  const [latestInterviewScore, setLatestInterviewScore] = useState(76);
+  const [latestInterviewScore, setLatestInterviewScore] = useState(null);
 
   // Computed Readiness Score
   const [readinessData, setReadinessData] = useState(() => 
-    computeCareerReadinessScore(EMPTY_PROFILE, 76)
+    computeCareerReadinessScore(EMPTY_PROFILE, null)
   );
 
   // Recompute readiness whenever profile or interview score changes
@@ -128,7 +128,7 @@ export default function App() {
         setIsDemoMode={setIsDemoMode}
         demoStep={demoStep}
         setDemoStep={setDemoStep}
-        readinessScore={readinessData?.overallReadiness || 78}
+        readinessScore={readinessData?.overallReadiness || 0}
         onOpenExport={() => setShowExportModal(true)}
       />
 

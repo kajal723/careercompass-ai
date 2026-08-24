@@ -45,8 +45,8 @@ export default function ReadinessDashboard({
   const [activeView, setActiveView] = useState('readiness'); // 'readiness' | 'what-if'
   
   // What-If Simulator State
-  const [activeSimIds, setActiveSimIds] = useState(['sim-spring-boot', 'sim-rest-api']);
-  const simulatedResult = calculateSimulatedReadiness(68, activeSimIds);
+  const [activeSimIds, setActiveSimIds] = useState([]);
+  const simulatedResult = calculateSimulatedReadiness(readinessData?.overallReadiness || 0, activeSimIds);
 
   const toggleSimOption = (simId) => {
     setActiveSimIds(prev => {
@@ -100,7 +100,7 @@ export default function ReadinessDashboard({
             }`}
           >
             <BarChart2 className="w-3.5 h-3.5" />
-            <span>Readiness Score (78%)</span>
+            <span>Readiness Score ({readinessData?.overallReadiness || 0}%)</span>
           </button>
           <button
             onClick={() => setActiveView('what-if')}
@@ -131,7 +131,7 @@ export default function ReadinessDashboard({
                 </span>
                 <div className="flex items-baseline space-x-3">
                   <span className="text-5xl sm:text-6xl font-black bg-clip-text text-transparent bg-gradient-to-r from-indigo-300 via-white to-cyan-300">
-                    {readinessData?.overallReadiness || 78}%
+                    {readinessData?.overallReadiness || 0}%
                   </span>
                   <span className="text-sm font-semibold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
                     High Placement Potential

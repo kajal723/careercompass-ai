@@ -6,7 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 @RestController
@@ -19,20 +19,10 @@ public class ProfileController {
 
     @GetMapping("/default")
     public ResponseEntity<StudentProfile> getDefaultProfile() {
-        StudentProfile defaultStudent = new StudentProfile(
-                "Kajal Shah",
-                "kajal.shah@university.edu",
-                "National Institute of Technology",
-                "B.Tech Computer Science and Engineering",
-                "8.2",
-                "2026",
-                "Java Backend Developer",
-                "Microsoft",
-                "Software Engineer",
-                Arrays.asList("Java", "SQL", "DSA", "Git", "MySQL", "OOP", "DBMS"),
-                Arrays.asList("Problem Solving", "Analytical Thinking", "Team Collaboration")
-        );
-        return ResponseEntity.ok(defaultStudent);
+        StudentProfile emptyProfile = new StudentProfile();
+        emptyProfile.setTechnicalSkills(Collections.emptyList());
+        emptyProfile.setSoftSkills(Collections.emptyList());
+        return ResponseEntity.ok(emptyProfile);
     }
 
     @PostMapping("/save")

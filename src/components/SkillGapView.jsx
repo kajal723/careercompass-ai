@@ -35,6 +35,10 @@ export default function SkillGapView({
   const gapAnalysis = analyzeSkillGaps(currentSkills, selectedRole.requiredSkills);
   const { criticalGaps, mediumGaps, strongSkills, nextBestSkill } = gapAnalysis;
 
+  if (!candidateProfile?.technicalSkills?.length && !resumeData?.detectedSkills?.length) {
+    return <div className="glass-card rounded-2xl border-slate-800 p-8 text-center"><Zap className="w-8 h-8 text-amber-400 mx-auto" /><h1 className="text-xl font-bold text-white mt-4">Skill gaps need your evidence</h1><p className="text-sm text-slate-400 mt-2">Add skills or analyze a resume to calculate gaps against a selected role.</p><button onClick={() => setActiveTab('profile')} className="mt-5 px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs font-semibold">Add skills</button></div>;
+  }
+
   return (
     <div className="space-y-6 pb-12">
       
