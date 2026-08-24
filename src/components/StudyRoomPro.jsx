@@ -10,8 +10,13 @@ const apiBase = import.meta.env.VITE_API_URL;
 function RemoteVideoTile({ participant }) {
   const videoRef = useRef(null);
   const screenRef = useRef(null);
-  useEffect(() => { if (videoRef.current) videoRef.current.srcObject = participant.stream || null; if (screenRef.current) screenRef.current.srcObject = participant.screenStream || null; }, [participant.stream, participant.screenStream]);
-  return <div className="relative min-w-0 space-y-2"><video ref={videoRef} autoPlay playsInline className="w-full aspect-video rounded-xl bg-slate-950 border border-slate-800 object-cover" /><span className="absolute bottom-2 left-2 rounded-md bg-slate-950/80 px-2 py-1 text-[10px] text-white">{participant.name}</span>{participant.screenStream && <video ref={screenRef} autoPlay playsInline className="w-full aspect-video rounded-xl bg-slate-950 border border-amber-500/30 object-contain" />}</div>;
+  const audioRef = useRef(null);
+  useEffect(() => {
+    if (videoRef.current) videoRef.current.srcObject = participant.cameraStream || null;
+    if (screenRef.current) screenRef.current.srcObject = participant.screenStream || null;
+    if (audioRef.current) audioRef.current.srcObject = participant.cameraStream || null;
+  }, [participant.cameraStream, participant.screenStream]);
+  return <div className="relative min-w-0 space-y-2"><video ref={videoRef} autoPlay playsInline className="w-full aspect-video rounded-xl bg-slate-950 border border-slate-800 object-cover" /><audio ref={audioRef} autoPlay /><span className="absolute bottom-2 left-2 rounded-md bg-slate-950/80 px-2 py-1 text-[10px] text-white">{participant.name}</span>{participant.screenStream && <video ref={screenRef} autoPlay playsInline className="w-full aspect-video rounded-xl bg-slate-950 border border-amber-500/30 object-contain" />}</div>;
 }
 
 export default function StudyRoomPro() {
@@ -137,9 +142,15 @@ export default function StudyRoomPro() {
         } catch { removePeer(peerId); }
         finally { makingOfferRef.current.delete(peerId); }
       };
-      peer.ontrack = ({ streams }) => {
+      peer.ontrack = ({ track, streams }) => {
         const stream = streams[0];
-        if (stream) setRemoteParticipants((current) => current.some((item) => item.participant_id === peerId) ? current.map((item) => item.participant_id === peerId ? (item.stream ? { ...item, screenStream: stream } : { ...item, stream }) : item) : current);
+        if (!stream) return;
+        setRemoteParticipants((current) => current.map((item) => {
+          if (item.participant_id !== peerId) return item;
+          if (track.kind === 'audio') return { ...item, cameraStream: item.cameraStream || stream };
+          if (!item.cameraStream || item.cameraStream.id === stream.id) return { ...item, cameraStream: item.cameraStream || stream };
+          return { ...item, screenStream: stream };
+        }));
       };
       peer.onconnectionstatechange = () => { if (['failed', 'closed', 'disconnected'].includes(peer.connectionState)) removePeer(peerId); };
       peerConnections.set(peerId, peer);
