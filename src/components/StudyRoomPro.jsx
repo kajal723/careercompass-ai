@@ -6,7 +6,7 @@ import CodeEditor from './CodeEditor';
 import DoubtSection from './DoubtSection';
 
 const formatTime = (seconds) => `${String(Math.floor(seconds / 60)).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`;
-const apiBase = `${window.location.protocol}//${window.location.hostname}:8000`;
+const apiBase = import.meta.env.VITE_API_URL;
 function RemoteVideoTile({ participant }) {
   const videoRef = useRef(null);
   const screenRef = useRef(null);
@@ -77,15 +77,20 @@ export default function StudyRoomPro() {
   const enterRoom = async (event, joining = false) => {
     event.preventDefault();
     setError('');
+    const roomCode = roomInput.trim().toUpperCase();
+    const requestUrl = joining
+      ? `${apiBase}/api/study/rooms/${encodeURIComponent(roomCode)}`
+      : `${apiBase}/api/study/rooms`;
+    console.info('[StudyRoom] room request', { apiUrl: requestUrl, method: joining ? 'GET' : 'POST' });
     try {
-      const response = joining
-        ? await fetch(`${apiBase}/api/study/rooms/${encodeURIComponent(roomInput.trim())}`)
-        : await fetch(`${apiBase}/api/study/rooms`, { method: 'POST' });
+      const response = await fetch(requestUrl, { method: joining ? 'GET' : 'POST' });
+      console.info('[StudyRoom] room response', { apiUrl: requestUrl, status: response.status, ok: response.ok });
       const result = await response.json();
       if (!response.ok) throw new Error(result.detail || 'Unable to access this room.');
       setRoom(result.room_code);
       setMessages([]);
     } catch (roomError) {
+      console.error('[StudyRoom] room request failed', { apiUrl: requestUrl, status: null, message: roomError.message });
       setError(roomError.message || 'Unable to connect to the room service.');
     }
   };
@@ -129,8 +134,9 @@ export default function StudyRoomPro() {
       return peer;
     };
     const connect = () => {
-      const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
-      const socket = new WebSocket(`${protocol}://${window.location.hostname}:8000/ws/study/${encodeURIComponent(room)}/${encodeURIComponent(participantId)}?name=${encodeURIComponent(user.name)}`);
+      const socketUrl = `${apiBase.replace(/^http/, 'ws')}/ws/study/${encodeURIComponent(room)}/${encodeURIComponent(participantId)}?name=${encodeURIComponent(user.name)}`;
+      console.info('[StudyRoom] WebSocket connecting', { apiUrl: socketUrl });
+      const socket = new WebSocket(socketUrl);
       socketRef.current = socket;
       socket.onopen = () => { setConnectionStatus('Connected'); send({ type: 'presence', participant }); };
       socket.onmessage = async ({ data }) => {
