@@ -1,10 +1,11 @@
-from fastapi import FastAPI, File, Form, HTTPException, UploadFile
+from fastapi import FastAPI, File, Form, HTTPException, UploadFile, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Optional, Dict, Any
 import uvicorn
 import re
 import io
+from collections import defaultdict
 
 app = FastAPI(
     title="CareerCompass AI — Intelligence & Placement Readiness Engine",
@@ -19,6 +20,68 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+class StudyRoomManager:
+    def __init__(self):
+        self.rooms = defaultdict(dict)
+
+    async def connect(self, room_code, participant_id, participant, websocket):
+        await websocket.accept()
+        existing = [item for item in self.rooms[room_code].values() if item["participant_id"] != participant_id]
+        self.rooms[room_code][participant_id] = {"websocket": websocket, "participant": participant}
+        await websocket.send_json({"type": "room_state", "participants": existing})
+        await self.broadcast(room_code, {"type": "presence", "action": "join", "participant": participant}, exclude=participant_id)
+
+    async def broadcast(self, room_code, message, exclude=None):
+        disconnected = []
+        for participant_id, connection in list(self.rooms.get(room_code, {}).items()):
+            if participant_id == exclude:
+                continue
+            try:
+                await connection["websocket"].send_json(message)
+            except Exception:
+                disconnected.append(participant_id)
+        for participant_id in disconnected:
+            self.rooms[room_code].pop(participant_id, None)
+
+    async def disconnect(self, room_code, participant_id):
+        self.rooms.get(room_code, {}).pop(participant_id, None)
+        if room_code in self.rooms and not self.rooms[room_code]:
+            self.rooms.pop(room_code, None)
+        else:
+            await self.broadcast(room_code, {"type": "presence", "action": "leave", "participant_id": participant_id})
+
+    async def relay(self, room_code, sender_id, message):
+        target_id = message.get("target_id")
+        if not target_id or target_id not in self.rooms.get(room_code, {}):
+            return
+        await self.rooms[room_code][target_id]["websocket"].send_json({**message, "sender_id": sender_id})
+
+
+study_rooms = StudyRoomManager()
+
+@app.websocket("/ws/study/{room_code}/{participant_id}")
+async def study_room_socket(websocket: WebSocket, room_code: str, participant_id: str):
+    room_code = room_code.strip().upper()
+    participant_id = participant_id.strip()
+    if not room_code or not participant_id:
+        await websocket.close(code=1008)
+        return
+    participant = {"participant_id": participant_id, "name": websocket.query_params.get("name", "Participant"), "video_on": False, "voice_on": False}
+    await study_rooms.connect(room_code, participant_id, participant, websocket)
+    try:
+        while True:
+            message = await websocket.receive_json()
+            message_type = message.get("type")
+            if message_type in {"signal", "chat", "whiteboard", "media", "hand"}:
+                if message_type == "signal":
+                    await study_rooms.relay(room_code, participant_id, message)
+                else:
+                    await study_rooms.broadcast(room_code, {**message, "sender_id": participant_id}, exclude=participant_id)
+    except WebSocketDisconnect:
+        await study_rooms.disconnect(room_code, participant_id)
+    except Exception:
+        await study_rooms.disconnect(room_code, participant_id)
 
 # ================= DATA SCHEMAS =================
 class ResumeParseRequest(BaseModel):

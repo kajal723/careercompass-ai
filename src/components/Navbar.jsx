@@ -8,7 +8,8 @@ import {
   PlayCircle,
   Briefcase,
   HelpCircle,
-  FileText
+  FileText,
+  Users
 } from 'lucide-react';
 import { sampleAlternativeProfiles, defaultStudentProfile } from '../data/initialData';
 
@@ -60,6 +61,7 @@ export default function Navbar({
               { id: 'projects-roadmap', label: 'Roadmap & Projects' },
               { id: 'mock-interview', label: 'AI Mock Interview' },
               { id: 'readiness', label: 'Readiness Score' },
+              { id: 'study-rooms', label: 'Study Rooms', icon: Users },
             ].map(item => (
               <button
                 key={item.id}

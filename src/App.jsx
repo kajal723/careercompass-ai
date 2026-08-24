@@ -12,6 +12,7 @@ import MockInterview from './components/MockInterview';
 import ReadinessDashboard from './components/ReadinessDashboard';
 import EvidenceMatrix from './components/EvidenceMatrix';
 import ExportReportModal from './components/ExportReportModal';
+import StudyRoomPro from './components/StudyRoomPro';
 
 import { defaultStudentProfile } from './data/initialData';
 import { parseResumeText } from './services/resumeParser';
@@ -244,6 +245,8 @@ export default function App() {
             setActiveTab={setActiveTab}
           />
         )}
+
+        {activeTab === 'study-rooms' && <StudyRoomPro />}
       </main>
 
       {/* Modern SaaS Footer */}
