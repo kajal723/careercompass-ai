@@ -9,7 +9,9 @@ import {
   Briefcase,
   HelpCircle,
   FileText,
-  Users
+  Users,
+  Menu,
+  X
 } from 'lucide-react';
 import { sampleAlternativeProfiles, defaultStudentProfile } from '../data/initialData';
 
@@ -25,6 +27,24 @@ export default function Navbar({
   readinessScore = 78,
   onOpenExport
 }) {
+  const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
+  const navigationItems = [
+    { id: 'dashboard', label: 'Dashboard' },
+    { id: 'resume', label: 'Resume Analyzer' },
+    { id: 'career-matches', label: 'Career Matches' },
+    { id: 'skill-gaps', label: 'Skill Gaps & Next Skill' },
+    { id: 'company-prep', label: 'Company Prep' },
+    { id: 'projects-roadmap', label: 'Roadmap & Projects' },
+    { id: 'mock-interview', label: 'AI Mock Interview' },
+    { id: 'readiness', label: 'Readiness Score' },
+    { id: 'study-rooms', label: 'Study Rooms', icon: Users },
+  ];
+
+  const selectNavigationItem = (itemId) => {
+    setActiveTab(itemId);
+    setMobileMenuOpen(false);
+  };
+
   return (
     <header className="sticky top-0 z-50 bg-slate-900/90 backdrop-blur-md border-b border-slate-800">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -52,17 +72,7 @@ export default function Navbar({
 
           {/* Quick Nav Links */}
           <nav className="hidden lg:flex items-center space-x-1">
-            {[
-              { id: 'dashboard', label: 'Dashboard' },
-              { id: 'resume', label: 'Resume Analyzer' },
-              { id: 'career-matches', label: 'Career Matches' },
-              { id: 'skill-gaps', label: 'Skill Gaps & Next Skill' },
-              { id: 'company-prep', label: 'Company Prep' },
-              { id: 'projects-roadmap', label: 'Roadmap & Projects' },
-              { id: 'mock-interview', label: 'AI Mock Interview' },
-              { id: 'readiness', label: 'Readiness Score' },
-              { id: 'study-rooms', label: 'Study Rooms', icon: Users },
-            ].map(item => (
+            {navigationItems.map(item => (
               <button
                 key={item.id}
                 onClick={() => setActiveTab(item.id)}
@@ -79,6 +89,15 @@ export default function Navbar({
 
           {/* Right Action Area: Demo Stepper, Persona Selector & Readiness Badge */}
           <div className="flex items-center space-x-3">
+
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="lg:hidden p-2 rounded-lg text-slate-300 hover:bg-slate-800 hover:text-white transition-colors"
+              aria-label={mobileMenuOpen ? 'Close navigation menu' : 'Open navigation menu'}
+              aria-expanded={mobileMenuOpen}
+            >
+              {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </button>
             
             {/* Demo Mode Toggle */}
             <button
@@ -162,6 +181,30 @@ export default function Navbar({
           </div>
         </div>
       </div>
+
+      {mobileMenuOpen && (
+        <nav className="lg:hidden border-t border-slate-800 bg-slate-900 px-4 py-3 shadow-xl">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+            {navigationItems.map((item) => {
+              const Icon = item.icon;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => selectNavigationItem(item.id)}
+                  className={`flex items-center gap-3 w-full rounded-lg px-3 py-2.5 text-left text-sm font-medium transition-colors ${
+                    activeTab === item.id
+                      ? 'bg-indigo-600/20 text-indigo-300 border border-indigo-500/30'
+                      : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+                  }`}
+                >
+                  {Icon && <Icon className="w-4 h-4 text-cyan-400" />}
+                  <span>{item.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </nav>
+      )}
     </header>
   );
 }
